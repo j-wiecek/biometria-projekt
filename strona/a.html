@@ -22,10 +22,20 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title text-center">Upload Biometric Data</h5>
-                        <form id="biometric-form" enctype="multipart/form-data">
+                        <form id="biometric-form">
                             <div class="mb-3">
                                 <label for="biometric-image" class="form-label">Upload Your Image:</label>
-                                <input class="form-control" type="file" id="biometric-image" name="biometric-image" accept="image/*" required>
+                                <input class="form-control" type="file" id="biometric-image" name="biometric-image" accept="image/*">
+                            </div>
+                            <div class="mb-3 text-center">
+                                <button type="button" class="btn btn-secondary" id="open-camera">Use Camera</button>
+                                <video id="camera-preview" style="display: none; width: 100%; margin-top: 10px;" autoplay></video>
+                                <canvas id="snapshot-canvas" style="display: none;"></canvas>
+                                <img id="captured-photo" style="display: none; width: 100%; margin-top: 10px;" alt="Captured photo preview">
+                                <div id="camera-controls" style="display: none; margin-top: 10px;">
+                                    <button type="button" class="btn btn-success" id="capture-photo">Capture Photo</button>
+                                    <button type="button" class="btn btn-danger" id="retake-photo">Retake Photo</button>
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Submit</button>
                         </form>
@@ -52,16 +62,74 @@
     </div>
 
     <script>
-        document.getElementById('biometric-form').addEventListener('submit', function (e) {
+        const openCameraButton = document.getElementById('open-camera');
+        const cameraPreview = document.getElementById('camera-preview');
+        const snapshotCanvas = document.getElementById('snapshot-canvas');
+        const capturedPhoto = document.getElementById('captured-photo');
+        const capturePhotoButton = document.getElementById('capture-photo');
+        const retakePhotoButton = document.getElementById('retake-photo');
+        const cameraControls = document.getElementById('camera-controls');
+        const biometricForm = document.getElementById('biometric-form');
+        const fileInput = document.getElementById('biometric-image');
+
+        let stream = null;
+        let capturedBlob = null;
+
+        openCameraButton.addEventListener('click', async () => {
+            if (!stream) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    cameraPreview.srcObject = stream;
+                    cameraPreview.style.display = 'block';
+                    cameraControls.style.display = 'block';
+                    capturedPhoto.style.display = 'none';
+                } catch (error) {
+                    alert('Unable to access the camera.');
+                }
+            }
+        });
+
+        capturePhotoButton.addEventListener('click', () => {
+            const context = snapshotCanvas.getContext('2d');
+            snapshotCanvas.width = cameraPreview.videoWidth;
+            snapshotCanvas.height = cameraPreview.videoHeight;
+            context.drawImage(cameraPreview, 0, 0);
+            snapshotCanvas.toBlob((blob) => {
+                capturedBlob = blob;
+                const url = URL.createObjectURL(blob);
+                capturedPhoto.src = url;
+                capturedPhoto.style.display = 'block';
+            });
+            cameraPreview.style.display = 'none';
+            cameraControls.style.display = 'block';
+        });
+
+        retakePhotoButton.addEventListener('click', () => {
+            capturedBlob = null;
+            capturedPhoto.style.display = 'none';
+            cameraPreview.style.display = 'block';
+        });
+
+        biometricForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const resultSection = document.getElementById('result-section');
             const keysList = document.getElementById('keys-list');
 
-            // Simulate embedding and key generation process
-            setTimeout(() => {
-                resultSection.style.display = 'block';
-                keysList.innerHTML = '<li class="list-group-item">SampleKey12345</li>';
-            }, 1000);
+            if (capturedBlob) {
+                // Simulate embedding and key generation process with camera image
+                setTimeout(() => {
+                    resultSection.style.display = 'block';
+                    keysList.innerHTML = '<li class="list-group-item">SampleKeyFromCamera</li>';
+                }, 1000);
+            } else if (fileInput.files.length > 0) {
+                // Simulate embedding and key generation process with uploaded file
+                setTimeout(() => {
+                    resultSection.style.display = 'block';
+                    keysList.innerHTML = '<li class="list-group-item">SampleKeyFromFile</li>';
+                }, 1000);
+            } else {
+                alert('Please upload an image or use the camera to capture one.');
+            }
         });
 
         document.getElementById('generate-new-key').addEventListener('click', function () {
