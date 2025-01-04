@@ -1,10 +1,12 @@
 import uuid
+from torch import embedding
 import torch.nn.functional as F
-from flask import Flask, render_template, request, url_for, redirect
+from flask import Flask, render_template, request, url_for, redirect, jsonify
 import os
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 from model.image_embedding import get_image_embedding
-from database import insert_photo, insert_user, get_all_biometric_templates, calculate_and_update_biometric_template
+from database import insert_photo, insert_user, get_all_biometric_templates, calculate_and_update_biometric_template, get_user_biometric_template, get_keys_by_user_id, insert_key
+from model.generate_key import generate_key
 
 app = Flask(__name__)
 
@@ -60,10 +62,19 @@ def upload_photo():
 def show_profile():
     user_id = request.args.get('user_id')
     if user_id:
-        return f"Profile page for user: {user_id}"
+        keys = get_keys_by_user_id(user_id)
+        return render_template('profile.html', keys=keys, user_id=user_id)
     else:
         return "Couldn't identify user"
 
+
+@app.route('/generate_new_key', methods=['POST'])
+def generate_new_key():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    biometric_template = get_user_biometric_template(user_id)
+    new_key = generate_key(biometric_template)
+    return jsonify({"key": new_key})
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,7 +1,6 @@
 import sqlite3 
 import torch
 import io
-import numpy as np
 
 conn = sqlite3.connect('biometric_data.db', check_same_thread=False)
 cursor = conn.cursor()
@@ -19,6 +18,15 @@ CREATE TABLE IF NOT EXISTS photo_db (
     user_id INTEGER,
     photo_name TEXT,
     embedding BLOB,
+    FOREIGN KEY (user_id) REFERENCES user_db(user_id)
+)
+''')
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS keys (
+    key_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    key TEXT,
     FOREIGN KEY (user_id) REFERENCES user_db(user_id)
 )
 ''')
@@ -88,11 +96,10 @@ def get_all_biometric_templates():
     return biometric_templates_dict
 
 def calculate_and_update_biometric_template(user_id):
-
     cursor.execute('SELECT embedding FROM photo_db WHERE user_id = ?', (user_id,))
     photo_embeddings = cursor.fetchall()
-    embeddings_array = np.array([torch.load(io.BytesIO(embedding[0])).detach().numpy() for embedding in photo_embeddings])
-    average_embedding = np.mean(embeddings_array, axis=0)
+    embeddings_list = [torch.load(io.BytesIO(embedding[0])) for embedding in photo_embeddings]
+    average_embedding = torch.stack(embeddings_list).mean(dim=0)
     buffer = io.BytesIO()
     torch.save(average_embedding, buffer)
     buffer.seek(0)
@@ -100,3 +107,18 @@ def calculate_and_update_biometric_template(user_id):
     cursor.execute('UPDATE user_db SET biometric_template = ? WHERE user_id = ?', (serialized_embedding, user_id))
     
     conn.commit()
+
+def insert_key(user_id, key):
+    cursor.execute('''
+    INSERT INTO keys (user_id, key)
+    VALUES (?, ?)
+    ''', (user_id, key))
+    conn.commit()
+    return cursor.lastrowid
+
+def get_keys_by_user_id(user_id):
+    cursor.execute('''
+    SELECT key FROM keys WHERE user_id = ?
+    ''', (user_id,))
+    keys = [row[0] for row in cursor.fetchall()]
+    return keys
