@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, url_for, redirect
 import os
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 from model.image_embedding import get_image_embedding
-from database import insert_photo, insert_user, get_all_biometric_templates, get_photo_embedding, get_user_biometric_template
+from database import insert_photo, insert_user, get_all_biometric_templates, calculate_and_update_biometric_template
 
 app = Flask(__name__)
 
@@ -25,6 +25,9 @@ def upload_photo():
         #save photo
         file = request.files['biometric-image']
         file.filename = "photo_" + str(uuid.uuid4().hex) + ".jpg"
+        #check if file with that name exists and if yes, change it
+        while os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], file.filename)):
+            file.filename = str(uuid.uuid4().hex) + ".jpg"
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_path)
         #get photo embedding
@@ -47,6 +50,7 @@ def upload_photo():
         else:
             user_id = users[0]
             insert_photo(user_id, file.filename, embedding)
+            calculate_and_update_biometric_template(user_id)
 
         return redirect(url_for('show_profile', user_id = user_id))
 

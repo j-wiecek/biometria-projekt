@@ -1,6 +1,7 @@
 import sqlite3 
 import torch
 import io
+import numpy as np
 
 conn = sqlite3.connect('biometric_data.db', check_same_thread=False)
 cursor = conn.cursor()
@@ -85,3 +86,17 @@ def get_all_biometric_templates():
         biometric_templates_dict[user_id] = biometric_template
 
     return biometric_templates_dict
+
+def calculate_and_update_biometric_template(user_id):
+
+    cursor.execute('SELECT embedding FROM photo_db WHERE user_id = ?', (user_id,))
+    photo_embeddings = cursor.fetchall()
+    embeddings_array = np.array([torch.load(io.BytesIO(embedding[0])).detach().numpy() for embedding in photo_embeddings])
+    average_embedding = np.mean(embeddings_array, axis=0)
+    buffer = io.BytesIO()
+    torch.save(average_embedding, buffer)
+    buffer.seek(0)
+    serialized_embedding = buffer.read()
+    cursor.execute('UPDATE user_db SET biometric_template = ? WHERE user_id = ?', (serialized_embedding, user_id))
+    
+    conn.commit()
