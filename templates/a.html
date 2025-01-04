@@ -22,7 +22,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title text-center">Upload Biometric Data</h5>
-                        <form id="biometric-form">
+                        <form id="biometric-form" method="POST" action="/upload" enctype="multipart/form-data">
                             <div class="mb-3">
                                 <label for="biometric-image" class="form-label">Upload Your Image:</label>
                                 <input class="form-control" type="file" id="biometric-image" name="biometric-image" accept="image/*">
@@ -109,7 +109,7 @@
             capturedPhoto.style.display = 'none';
             cameraPreview.style.display = 'block';
         });
-
+        /*
         biometricForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const resultSection = document.getElementById('result-section');
@@ -131,7 +131,7 @@
                 alert('Please upload an image or use the camera to capture one.');
             }
         });
-
+        */
         document.getElementById('generate-new-key').addEventListener('click', function () {
             const keysList = document.getElementById('keys-list');
             const newKey = `NewKey-${Math.random().toString(36).substring(2, 10)}`;
