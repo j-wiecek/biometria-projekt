@@ -1,5 +1,4 @@
 import uuid
-from torch import embedding
 import torch.nn.functional as F
 from flask import Flask, render_template, request, url_for, redirect, jsonify
 import os
@@ -74,6 +73,7 @@ def generate_new_key():
     user_id = data.get('user_id')
     biometric_template = get_user_biometric_template(user_id)
     new_key = generate_key(biometric_template)
+    insert_key(user_id, new_key)
     return jsonify({"key": new_key})
 
 if __name__ == '__main__':

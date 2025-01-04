@@ -9,6 +9,8 @@ model = ViTModel.from_pretrained('vit-base-patch16-224-in21k')
 
 def get_image_embedding(path):
     image = Image.open(path)
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
     inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs)
     feature_vector = outputs.last_hidden_state.mean(dim=1)

@@ -22,7 +22,7 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title text-center">Upload Biometric Data</h5>
-                        <form id="biometric-form" method="POST" action="/upload" enctype="multipart/form-data">
+                        <form id="biometric-form">
                             <div class="mb-3">
                                 <label for="biometric-image" class="form-label">Upload Your Image:</label>
                                 <input class="form-control" type="file" id="biometric-image" name="biometric-image" accept="image/*">
@@ -39,22 +39,6 @@
                             </div>
                             <button type="submit" class="btn btn-primary w-100">Submit</button>
                         </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-4">
-            <div class="col-md-6 offset-md-3" id="result-section" style="display: none;">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">Generated Keys</h5>
-                        <ul id="keys-list" class="list-group">
-                            <!-- Generated keys will be inserted here dynamically -->
-                        </ul>
-                        <div class="mt-3 text-center">
-                            <button id="generate-new-key" class="btn btn-success">Generate New Key</button>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -109,33 +93,37 @@
             capturedPhoto.style.display = 'none';
             cameraPreview.style.display = 'block';
         });
-        /*
         biometricForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const resultSection = document.getElementById('result-section');
-            const keysList = document.getElementById('keys-list');
 
-            if (capturedBlob) {
-                // Simulate embedding and key generation process with camera image
-                setTimeout(() => {
-                    resultSection.style.display = 'block';
-                    keysList.innerHTML = '<li class="list-group-item">SampleKeyFromCamera</li>';
-                }, 1000);
-            } else if (fileInput.files.length > 0) {
-                // Simulate embedding and key generation process with uploaded file
-                setTimeout(() => {
-                    resultSection.style.display = 'block';
-                    keysList.innerHTML = '<li class="list-group-item">SampleKeyFromFile</li>';
-                }, 1000);
-            } else {
-                alert('Please upload an image or use the camera to capture one.');
+            if (capturedBlob || fileInput.files.length > 0) {
+                const formData = new FormData();
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const imageType = file.type;
+                    formData.append('biometric-image', file);
+                }
+                else if (capturedBlob) {
+                    const imageType = 'image/png';
+                    const file = new Blob([capturedBlob], { type: imageType });
+                    formData.append('biometric-image', file, 'captured-photo.png');
+                }
+
+                fetch('/upload', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        console.log('Response:', response);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error uploading image:', error);
+                });
             }
-        });
-        */
-        document.getElementById('generate-new-key').addEventListener('click', function () {
-            const keysList = document.getElementById('keys-list');
-            const newKey = `NewKey-${Math.random().toString(36).substring(2, 10)}`;
-            keysList.innerHTML += `<li class="list-group-item">${newKey}</li>`;
         });
     </script>
 </body>
